@@ -1,0 +1,24 @@
+[Unit]
+Description=Talos Fitness Tracker
+After=network.target
+
+[Service]
+Type=notify
+User=pi
+Group=pi
+WorkingDirectory=/opt/talos/app
+Environment="PATH=/opt/talos/venv/bin"
+EnvironmentFile=/opt/talos/app/.env
+ExecStart=/opt/talos/venv/bin/gunicorn -c /opt/talos/gunicorn.conf.py app:app
+Restart=always
+RestartSec=5
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/opt/talos
+ReadWritePaths=/opt/duobrain/vault
+
+[Install]
+WantedBy=multi-user.target

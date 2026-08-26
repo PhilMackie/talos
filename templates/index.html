@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Talos — Routines{% endblock %}
+{% block content %}
+<h1 class="page-title">Routines</h1>
+{% if not routines %}
+  <p class="empty">No routine files found in the vault yet.</p>
+{% else %}
+  <div class="routine-grid">
+    {% for r in routines %}
+    <div class="routine-card-wrap">
+      <a class="routine-card{% if r.is_next %} routine-card-next{% endif %}" href="{{ url_for('routine_view', slug=r.slug) }}">
+        {% if r.is_next %}<div class="next-badge">Up Next</div>{% endif %}
+        <h2>{{ r.title }}</h2>
+        <div class="routine-card-meta">
+          {% if r.meta.Focus %}<span>{{ r.meta.Focus }}</span>{% endif %}
+          <span>{{ r.exercise_count }} exercises</span>
+        </div>
+      </a>
+      {% if not r.is_next %}
+      <button type="button" class="mark-next-btn" data-role="mark-next" data-slug="{{ r.slug }}">Mark as next</button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="debug-session-row">
+  <a class="debug-session-btn" href="{{ url_for('routine_view', slug='debug') }}">Debug Session</a>
+</div>
+
+<script>
+document.querySelectorAll('[data-role="mark-next"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    fetch('/rotation/set', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({slug: btn.dataset.slug}),
+    }).then(r => { if (r.ok) location.reload(); });
+  });
+});
+</script>
+{% endblock %}
