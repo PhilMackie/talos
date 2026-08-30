@@ -96,13 +96,8 @@
       </div>
       {% endif %}
 
-      {% if ex.coaches_notes_line %}
-      <div class="field-row coaches-notes-row">
-        <label class="field-label" for="field-{{ ex.coaches_notes_line }}">Coaches Notes</label>
-        <textarea class="field-input coaches-notes-input" id="field-{{ ex.coaches_notes_line }}"
-          data-label="Coaches Notes" data-start="{{ ex.coaches_notes_line }}" data-end="{{ ex.coaches_notes_line }}"
-          rows="2" placeholder="Form cues, weak points...">{{ ex.coaches_notes }}</textarea>
-      </div>
+      {% if ex.coaches_notes %}
+      <div class="coaches-notes-quote">&ldquo;{{ ex.coaches_notes }}&rdquo;</div>
       {% endif %}
 
       <div class="set-list">

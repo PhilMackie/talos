@@ -526,8 +526,12 @@ main { max-width: 720px; margin: 0 auto; padding: 1.2rem; }
 
 .notes-textarea { resize: vertical; }
 
-.coaches-notes-row { margin-top: 0.5rem; }
-.coaches-notes-input { resize: vertical; font-size: 0.85rem; }
+.coaches-notes-quote {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-style: italic;
+  margin-top: 0.4rem;
+}
 
 .save-status {
   font-size: 0.75rem;
