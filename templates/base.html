@@ -46,7 +46,7 @@
       <span>TALOS</span>
     </a>
   </header>
-  {% set streak_color = 'gold' if streak_count >= streak_goal else ('green' if streak_count >= streak_minimum else 'orange') %}
+  {% set streak_color = 'gold' if streak_count >= streak_goal else 'orange' %}
   <div class="streak-indicator" title="This week: {{ streak_count }}/{{ streak_goal }} (min {{ streak_minimum }})">
     {% for i in range(4) %}
     <span class="streak-square{% if i < streak_count %} filled {{ streak_color }}{% endif %}"></span>

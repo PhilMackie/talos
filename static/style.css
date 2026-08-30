@@ -104,7 +104,6 @@ body.focus-mode .streak-indicator {
 }
 
 .streak-square.filled.orange { background: var(--orange); border-color: var(--orange); }
-.streak-square.filled.green { background: var(--green); border-color: var(--green); }
 .streak-square.filled.gold { background: var(--streak-gold); border-color: var(--streak-gold); }
 
 .streak-square.filled.gold::after {
