@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% block title %}{{ routine.title }} — Talos{% endblock %}
 {% block content %}
-<a class="back-link" href="{{ url_for('index') }}">&larr; Routines</a>
+<div class="routine-header-row">
+  <a class="back-link" href="{{ url_for('index') }}">&larr; Routines</a>
+  {% if alt_toggle %}
+  <a class="alt-toggle-btn" href="{{ url_for('routine_view', slug=alt_toggle.slug) }}">{{ alt_toggle.label }}</a>
+  {% endif %}
+</div>
 <h1 class="page-title">{{ routine.title }}</h1>
 
 {% if routine.meta %}
@@ -88,6 +93,15 @@
         {% endif %}
         <button class="link-edit-btn" data-role="edit-instruction" data-line="{{ ex.instruction_line }}"
           data-current="{{ ex.instruction }}">{{ 'Edit link' if ex.instruction else '+ Add instruction link' }}</button>
+      </div>
+      {% endif %}
+
+      {% if ex.coaches_notes_line %}
+      <div class="field-row coaches-notes-row">
+        <label class="field-label" for="field-{{ ex.coaches_notes_line }}">Coaches Notes</label>
+        <textarea class="field-input coaches-notes-input" id="field-{{ ex.coaches_notes_line }}"
+          data-label="Coaches Notes" data-start="{{ ex.coaches_notes_line }}" data-end="{{ ex.coaches_notes_line }}"
+          rows="2" placeholder="Form cues, weak points...">{{ ex.coaches_notes }}</textarea>
       </div>
       {% endif %}
 

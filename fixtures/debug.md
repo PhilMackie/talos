@@ -17,6 +17,8 @@
 
 **Progression:** Increase reps once this stops meaning anything.
 
+**Coaches Notes:**
+
 - [ ] Set 1
 - [ ] Set 2
 - [ ] Set 3
@@ -30,6 +32,8 @@
 **Instruction:**
 
 **Rest:** 20 sec
+
+**Coaches Notes:**
 
 - [ ] Set 1
 - [ ] Set 2

@@ -10,6 +10,7 @@
   --green: #3ecf6a;
   --gold: #ff6700;
   --yellow: #e8b93e;
+  --streak-gold: #ffc72c;
 }
 
 * { box-sizing: border-box; }
@@ -24,6 +25,48 @@ body {
   padding-bottom: 6rem;
 }
 
+.forge-embers {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.forge-embers .particle {
+  position: absolute;
+  bottom: -5%;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  opacity: 0;
+  animation-name: ember-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.forge-embers .ember {
+  background: var(--orange);
+}
+
+.forge-embers .smoke {
+  background: var(--text-dim);
+  filter: blur(1.5px);
+}
+
+@keyframes ember-rise {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  8%   { opacity: 0.3; }
+  20%  { transform: translate(var(--d1), -20vh) rotate(var(--r1)); opacity: 0.12; }
+  38%  { opacity: 0.32; }
+  50%  { transform: translate(var(--d2), -50vh) rotate(var(--r2)); opacity: 0.15; }
+  68%  { opacity: 0.3; }
+  80%  { transform: translate(var(--d3), -80vh) rotate(var(--r3)); opacity: 0.18; }
+  92%  { opacity: 0.22; }
+  100% { transform: translate(var(--d4), -105vh) rotate(var(--r4)); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forge-embers { display: none; }
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -33,6 +76,55 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+.streak-indicator {
+  position: fixed;
+  top: calc(1.05rem + env(safe-area-inset-top));
+  right: 1.2rem;
+  display: flex;
+  gap: 0.3rem;
+  z-index: 35;
+}
+
+body.focus-mode .streak-indicator {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.streak-square {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  overflow: hidden;
+}
+
+.streak-square.filled.orange { background: var(--orange); border-color: var(--orange); }
+.streak-square.filled.green { background: var(--green); border-color: var(--green); }
+.streak-square.filled.gold { background: var(--streak-gold); border-color: var(--streak-gold); }
+
+.streak-square.filled.gold::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+  animation: gold-sheen 2.4s ease-in-out infinite;
+}
+
+@keyframes gold-sheen {
+  0%, 15%   { left: -60%; }
+  65%, 100% { left: 140%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-square.filled.gold::after { animation: none; display: none; }
 }
 
 .brand {
@@ -60,6 +152,25 @@ main { max-width: 720px; margin: 0 auto; padding: 1.2rem; }
   color: var(--orange);
   text-decoration: none;
   font-size: 0.9rem;
+}
+
+.routine-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.alt-toggle-btn {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--orange);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  white-space: nowrap;
 }
 
 .empty { color: var(--text-dim); }
@@ -415,6 +526,9 @@ main { max-width: 720px; margin: 0 auto; padding: 1.2rem; }
 
 .notes-textarea { resize: vertical; }
 
+.coaches-notes-row { margin-top: 0.5rem; }
+.coaches-notes-input { resize: vertical; font-size: 0.85rem; }
+
 .save-status {
   font-size: 0.75rem;
   color: var(--green);
@@ -497,7 +611,7 @@ main { max-width: 720px; margin: 0 auto; padding: 1.2rem; }
 /* Focus mode */
 
 body.focus-mode .topbar,
-body.focus-mode .back-link,
+body.focus-mode .routine-header-row,
 body.focus-mode .page-title,
 body.focus-mode .meta-row,
 body.focus-mode .start-workout-row,
@@ -508,6 +622,10 @@ body.focus-mode .section-title {
 body.focus-mode main {
   padding: 0;
   max-width: none;
+}
+
+body.focus-mode .forge-embers {
+  z-index: 16;
 }
 
 .exercise-card.focus-active,

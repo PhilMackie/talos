@@ -64,6 +64,8 @@ def parse_routine(path):
                 'targets': '',
                 'rest': '',
                 'progression': '',
+                'coaches_notes': '',
+                'coaches_notes_line': None,
                 'sets': [],
             }
             current_section['exercises'].append(current_exercise)
@@ -83,6 +85,9 @@ def parse_routine(path):
                     current_exercise['rest'] = value
                 elif key == 'progression':
                     current_exercise['progression'] = value
+                elif key == 'coaches notes':
+                    current_exercise['coaches_notes'] = value
+                    current_exercise['coaches_notes_line'] = line_no
                 continue
             if in_preamble or current_section is None:
                 meta[label] = value
@@ -106,6 +111,7 @@ def parse_routine(path):
                     'name': current_section['name'],
                     'weight': '', 'reps': '', 'header_line': None, 'instruction': '',
                     'instruction_line': None, 'targets': '', 'rest': '', 'progression': '',
+                    'coaches_notes': '', 'coaches_notes_line': None,
                     'sets': [],
                 }
                 current_section['exercises'].append(current_exercise)

@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from datetime import date
+from datetime import date, timedelta
 
 from flask import Flask, render_template, jsonify, request, abort
 
@@ -17,6 +17,11 @@ VAULT_ROUTINES_DIR = os.environ.get(
 VAULT_TALOS_DIR = os.path.dirname(VAULT_ROUTINES_DIR.rstrip('/'))
 ROTATION_STATE_PATH = os.path.join(VAULT_TALOS_DIR, 'rotation_state.json')
 SESSION_LOG_PATH = os.path.join(VAULT_TALOS_DIR, 'session_log.md')
+STREAK_LOG_PATH = os.path.join(VAULT_TALOS_DIR, 'streak.md')
+
+STREAK_WEEKLY_MINIMUM = 3
+STREAK_WEEKLY_GOAL = 4
+STREAK_ENTRY_RE = re.compile(r'^-\s+(\d{4}-\d{2}-\d{2})\s+—\s+(.*)$')
 
 ROTATION = [
     'arms-a', 'back-shoulders-a', 'chest-a', 'legs-a',
@@ -24,7 +29,11 @@ ROTATION = [
 ]
 
 DEBUG_SLUG = 'debug'
-DEBUG_ROUTINE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures', 'debug.md')
+ALT_DEBUG_SLUG = 'alt-debug'
+FIXTURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
+DEBUG_ROUTINE_PATH = os.path.join(FIXTURES_DIR, 'debug.md')
+ALT_DEBUG_ROUTINE_PATH = os.path.join(FIXTURES_DIR, 'alt-debug.md')
+DEBUG_SLUGS = {DEBUG_SLUG, ALT_DEBUG_SLUG}
 
 app = Flask(__name__)
 
@@ -56,16 +65,33 @@ def advance_rotation(completed_slug):
 
 
 def routine_path(slug):
-    if slug == DEBUG_SLUG:
-        if not os.path.isfile(DEBUG_ROUTINE_PATH):
+    if slug in DEBUG_SLUGS:
+        fixture_path = DEBUG_ROUTINE_PATH if slug == DEBUG_SLUG else ALT_DEBUG_ROUTINE_PATH
+        if not os.path.isfile(fixture_path):
             abort(404)
-        return DEBUG_ROUTINE_PATH
+        return fixture_path
     if not re.match(r'^[a-z0-9-]+$', slug):
         abort(404)
     path = os.path.join(VAULT_ROUTINES_DIR, f'{slug}.md')
     if not os.path.isfile(path):
         abort(404)
     return path
+
+
+def alt_toggle(slug):
+    if slug == DEBUG_SLUG:
+        target, label, target_path = ALT_DEBUG_SLUG, 'Home Gym Day', ALT_DEBUG_ROUTINE_PATH
+    elif slug == ALT_DEBUG_SLUG:
+        target, label, target_path = DEBUG_SLUG, 'Standard Gym Day', DEBUG_ROUTINE_PATH
+    elif slug.startswith('alt-'):
+        target, label = slug[len('alt-'):], 'Standard Gym Day'
+        target_path = os.path.join(VAULT_ROUTINES_DIR, f'{target}.md')
+    else:
+        target, label = f'alt-{slug}', 'Home Gym Day'
+        target_path = os.path.join(VAULT_ROUTINES_DIR, f'{target}.md')
+    if not os.path.isfile(target_path):
+        return None
+    return {'slug': target, 'label': label}
 
 
 @app.template_filter('clean_weight')
@@ -157,12 +183,56 @@ def append_session_log(routine):
         f.write(build_session_log_entry(routine) + '\n')
 
 
+def append_streak_entry(title):
+    if not os.path.exists(STREAK_LOG_PATH):
+        with open(STREAK_LOG_PATH, 'w') as f:
+            f.write(
+                '# Talos — Streak\n\n'
+                '**Week starts:** Monday\n'
+                f'**Weekly minimum:** {STREAK_WEEKLY_MINIMUM}\n'
+                f'**Weekly goal:** {STREAK_WEEKLY_GOAL}\n\n'
+                '---\n\n'
+            )
+    with open(STREAK_LOG_PATH, 'a') as f:
+        f.write(f'- {date.today().isoformat()} — {title}\n')
+
+
+def current_week_streak_count():
+    if not os.path.exists(STREAK_LOG_PATH):
+        return 0
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+    count = 0
+    with open(STREAK_LOG_PATH) as f:
+        for line in f:
+            m = STREAK_ENTRY_RE.match(line.strip())
+            if not m:
+                continue
+            try:
+                entry_date = date.fromisoformat(m.group(1))
+            except ValueError:
+                continue
+            if week_start <= entry_date <= week_end:
+                count += 1
+    return count
+
+
+@app.context_processor
+def inject_streak():
+    return {
+        'streak_count': current_week_streak_count(),
+        'streak_minimum': STREAK_WEEKLY_MINIMUM,
+        'streak_goal': STREAK_WEEKLY_GOAL,
+    }
+
+
 @app.route('/')
 def index():
     routines = []
     if os.path.isdir(VAULT_ROUTINES_DIR):
         for filename in sorted(os.listdir(VAULT_ROUTINES_DIR)):
-            if not filename.endswith('.md'):
+            if not filename.endswith('.md') or filename.startswith('alt-'):
                 continue
             slug = filename[:-3]
             try:
@@ -193,7 +263,7 @@ def index():
 def routine_view(slug):
     path = routine_path(slug)
     routine = parse_routine(path)
-    return render_template('routine.html', slug=slug, routine=routine)
+    return render_template('routine.html', slug=slug, routine=routine, alt_toggle=alt_toggle(slug))
 
 
 @app.route('/routine/<slug>/toggle', methods=['POST'])
@@ -251,8 +321,10 @@ def rotation_complete():
     data = request.get_json(force=True)
     slug = data.get('slug', '')
     path = routine_path(slug)
-    if slug != DEBUG_SLUG:
-        append_session_log(parse_routine(path))
+    if slug not in DEBUG_SLUGS:
+        routine = parse_routine(path)
+        append_session_log(routine)
+        append_streak_entry(routine['title'])
     reset_checkboxes(path)
     advance_rotation(slug)
     return jsonify({'next_slug': load_next_slug()})
