@@ -56,6 +56,8 @@ def save_next_slug(slug):
 
 
 def advance_rotation(completed_slug):
+    if completed_slug.startswith('alt-'):
+        completed_slug = completed_slug[len('alt-'):]
     if completed_slug not in ROTATION:
         return
     if load_next_slug() != completed_slug:
