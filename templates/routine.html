@@ -120,6 +120,10 @@
 </section>
 {% endfor %}
 
+<div class="finish-workout-row">
+  <button class="finish-btn" data-role="finish-workout-main">Finish Workout</button>
+</div>
+
 <div class="rest-timer-bar" data-role="rest-timer" hidden>
   <div class="rest-timer-progress" data-role="rest-progress"></div>
   <div class="rest-timer-inner">
@@ -179,6 +183,7 @@ const focusStorageKey = `talos-focus-${slug}`;
 let focusIndex = 0;
 
 const startBtn = document.querySelector('[data-role="start-workout"]');
+const finishMainBtn = document.querySelector('[data-role="finish-workout-main"]');
 const focusTopbar = document.querySelector('[data-role="focus-topbar"]');
 const focusNavbar = document.querySelector('[data-role="focus-navbar"]');
 const focusEndBtn = document.querySelector('[data-role="focus-end"]');
@@ -327,6 +332,7 @@ chartBtn.addEventListener('click', openProgressSheet);
 document.querySelector('[data-role="progress-close"]').addEventListener('click', closeProgressSheet);
 document.querySelector('[data-role="progress-backdrop"]').addEventListener('click', closeProgressSheet);
 finishBtn.addEventListener('click', completeWorkout);
+if (finishMainBtn) finishMainBtn.addEventListener('click', completeWorkout);
 
 focusEndBtn.addEventListener('click', () => {
   clearFocusState();

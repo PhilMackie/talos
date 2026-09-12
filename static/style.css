@@ -287,6 +287,8 @@ main { max-width: 720px; margin: 0 auto; padding: 1.2rem; }
 
 .start-workout-row { margin-bottom: 1.4rem; }
 
+.finish-workout-row { margin-top: 1.8rem; }
+
 .start-btn {
   width: 100%;
   background: var(--orange);
@@ -304,6 +306,19 @@ main { max-width: 720px; margin: 0 auto; padding: 1.2rem; }
   background: var(--bg-card);
   color: var(--orange);
   border: 1px solid var(--orange-dim);
+}
+
+.finish-btn {
+  width: 100%;
+  background: var(--bg-card);
+  color: var(--orange);
+  border: 1px solid var(--orange-dim);
+  border-radius: 10px;
+  padding: 0.9rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
 }
 
 .workout-section { margin-bottom: 1.8rem; }
@@ -618,6 +633,7 @@ body.focus-mode .routine-header-row,
 body.focus-mode .page-title,
 body.focus-mode .meta-row,
 body.focus-mode .start-workout-row,
+body.focus-mode .finish-workout-row,
 body.focus-mode .section-title {
   display: none !important;
 }
