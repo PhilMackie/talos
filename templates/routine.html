@@ -7,7 +7,9 @@
   <a class="alt-toggle-btn" href="{{ url_for('routine_view', slug=alt_toggle.slug) }}">{{ alt_toggle.label }}</a>
   {% endif %}
 </div>
-<h1 class="page-title">{{ routine.title }}</h1>
+<h1 class="page-title">{{ routine.title }}
+  <button type="button" class="edit-pencil-btn" data-role="edit-toggle" aria-label="Edit routine details" title="Edit routine details">&#9998;</button>
+</h1>
 
 {% if routine.meta %}
 <div class="meta-row">
@@ -76,28 +78,59 @@
       </div>
 
       {% if ex.targets %}
-      <div class="exercise-targets">{{ ex.targets }}</div>
+      <div class="exercise-targets view-only">{{ ex.targets }}</div>
+      {% endif %}
+      {% if ex.targets_line %}
+      <div class="field-row edit-only-field">
+        <label class="field-label">Targets</label>
+        <input class="field-input" type="text" data-label="Targets"
+          data-start="{{ ex.targets_line }}" data-end="{{ ex.targets_line }}" value="{{ ex.targets }}">
+      </div>
       {% endif %}
 
       {% if ex.rest or ex.progression %}
-      <div class="exercise-sub">
+      <div class="exercise-sub view-only">
         {% if ex.rest %}<span>Rest: {{ ex.rest }}</span>{% endif %}
         {% if ex.progression %}<span>{{ ex.progression }}</span>{% endif %}
       </div>
       {% endif %}
+      {% if ex.rest_line %}
+      <div class="field-row edit-only-field">
+        <label class="field-label">Rest</label>
+        <input class="field-input" type="text" data-label="Rest"
+          data-start="{{ ex.rest_line }}" data-end="{{ ex.rest_line }}" value="{{ ex.rest }}">
+      </div>
+      {% endif %}
+      {% if ex.progression_line %}
+      <div class="field-row edit-only-field">
+        <label class="field-label">Progression</label>
+        <input class="field-input" type="text" data-label="Progression"
+          data-start="{{ ex.progression_line }}" data-end="{{ ex.progression_line }}" value="{{ ex.progression }}">
+      </div>
+      {% endif %}
 
-      {% if ex.instruction_line %}
-      <div class="instruction-row">
-        {% if ex.instruction %}
+      {% if ex.instruction %}
+      <div class="instruction-row view-only">
         <a class="instruction-link" href="{{ ex.instruction }}" target="_blank" rel="noopener">&#9654; Watch Instruction</a>
-        {% endif %}
-        <button class="link-edit-btn" data-role="edit-instruction" data-line="{{ ex.instruction_line }}"
-          data-current="{{ ex.instruction }}">{{ 'Edit link' if ex.instruction else '+ Add instruction link' }}</button>
+      </div>
+      {% endif %}
+      {% if ex.instruction_line %}
+      <div class="field-row edit-only-field">
+        <label class="field-label">Instruction Link</label>
+        <input class="field-input" type="text" data-label="Instruction"
+          data-start="{{ ex.instruction_line }}" data-end="{{ ex.instruction_line }}" value="{{ ex.instruction }}">
       </div>
       {% endif %}
 
       {% if ex.coaches_notes %}
-      <div class="coaches-notes-quote">&ldquo;{{ ex.coaches_notes }}&rdquo;</div>
+      <div class="coaches-notes-quote view-only">&ldquo;{{ ex.coaches_notes }}&rdquo;</div>
+      {% endif %}
+      {% if ex.coaches_notes_line %}
+      <div class="field-row edit-only-field">
+        <label class="field-label">Coaches Notes</label>
+        <input class="field-input" type="text" data-label="Coaches Notes"
+          data-start="{{ ex.coaches_notes_line }}" data-end="{{ ex.coaches_notes_line }}" value="{{ ex.coaches_notes }}">
+      </div>
       {% endif %}
 
       <div class="set-list">
@@ -140,7 +173,10 @@
 </div>
 
 <div class="focus-topbar" data-role="focus-topbar" hidden>
-  <button class="focus-back-btn" data-role="focus-back">&larr; Back</button>
+  <div class="focus-topbar-left">
+    <button class="focus-back-btn" data-role="focus-back">&larr; Back</button>
+    <button type="button" class="edit-pencil-btn" data-role="edit-toggle" aria-label="Edit routine details" title="Edit routine details">&#9998;</button>
+  </div>
   <button class="focus-end-btn" data-role="focus-end">End Workout</button>
 </div>
 
@@ -160,6 +196,19 @@
       <button type="button" class="progress-close-btn" data-role="progress-close">&times;</button>
     </div>
     <div class="progress-sheet-list" data-role="progress-list"></div>
+  </div>
+</div>
+
+<div class="summary-overlay" data-role="summary-overlay" hidden>
+  <canvas class="confetti-canvas" data-role="confetti-canvas" hidden></canvas>
+  <div class="summary-panel">
+    <div class="summary-header">
+      <div class="summary-trophy">&#127942;</div>
+      <h2>Workout Complete</h2>
+      <p class="summary-subtitle">{{ routine.title }}</p>
+    </div>
+    <div class="summary-list" data-role="summary-list"></div>
+    <button type="button" class="summary-done-btn" data-role="summary-done">Done</button>
   </div>
 </div>
 
@@ -304,12 +353,141 @@ function exitFocusMode() {
   focusSteps.forEach(card => card.classList.remove('focus-active'));
 }
 
+function buildSummary() {
+  const sections = [];
+  let current = null;
+  exerciseCards.forEach(card => {
+    const sectionName = card.dataset.sectionName || '';
+    if (!current || current.name !== sectionName) {
+      current = {name: sectionName, exercises: []};
+      sections.push(current);
+    }
+    const setButtons = Array.from(card.querySelectorAll('[data-role="set-toggle"]'));
+    const total = setButtons.length;
+    const done = setButtons.filter(b => b.classList.contains('checked')).length;
+    const skipped = total > 0 && setButtons.every(b => b.classList.contains('skipped'));
+    const weightInput = card.querySelector('[data-role="weight-input"]');
+    const weightSpan = card.querySelector('.spec.weight');
+    const weight = weightInput ? weightInput.value.trim() : (weightSpan ? weightSpan.textContent.trim() : '');
+    const repsSpan = card.querySelector('.spec.reps');
+    const reps = repsSpan ? repsSpan.textContent.trim() : '';
+    current.exercises.push({name: card.dataset.exerciseName, weight, reps, done, total, skipped});
+  });
+  return sections.filter(s => s.exercises.length);
+}
+
+function renderSummary(sections) {
+  const listEl = document.querySelector('[data-role="summary-list"]');
+  listEl.innerHTML = '';
+  sections.forEach(section => {
+    const heading = document.createElement('div');
+    heading.className = 'summary-section-title';
+    heading.textContent = section.name;
+    listEl.appendChild(heading);
+
+    section.exercises.forEach(ex => {
+      const row = document.createElement('div');
+      row.className = 'summary-item';
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'summary-item-name';
+      nameEl.textContent = ex.name;
+
+      const specEl = document.createElement('span');
+      specEl.className = 'summary-item-spec';
+      specEl.textContent = [ex.weight, ex.reps].filter(Boolean).join(' × ');
+
+      const badgeEl = document.createElement('span');
+      if (ex.skipped) {
+        badgeEl.className = 'summary-badge summary-badge-skipped';
+        badgeEl.textContent = 'Skipped';
+      } else if (ex.total) {
+        badgeEl.className = `summary-badge ${ex.done === ex.total ? 'summary-badge-done' : 'summary-badge-partial'}`;
+        badgeEl.textContent = `${ex.done}/${ex.total}`;
+      } else {
+        badgeEl.className = 'summary-badge';
+      }
+
+      row.append(nameEl, specEl, badgeEl);
+      listEl.appendChild(row);
+    });
+  });
+}
+
+function launchConfetti() {
+  const canvas = document.querySelector('[data-role="confetti-canvas"]');
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    canvas.hidden = true;
+    return;
+  }
+  canvas.hidden = false;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const colors = ['#ff6700', '#ffc72c', '#e8b93e', '#3ecf6a', '#f0ede8'];
+  const pieces = Array.from({length: 140}, () => ({
+    x: Math.random() * width,
+    y: -20 - Math.random() * height * 0.4,
+    w: 6 + Math.random() * 5,
+    h: 8 + Math.random() * 6,
+    vx: -1.5 + Math.random() * 3,
+    vy: 2 + Math.random() * 2.5,
+    rot: Math.random() * Math.PI * 2,
+    vr: -0.2 + Math.random() * 0.4,
+    color: colors[Math.floor(Math.random() * colors.length)],
+  }));
+
+  const start = performance.now();
+  const duration = 2600;
+
+  function frame(now) {
+    ctx.clearRect(0, 0, width, height);
+    pieces.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.04;
+      p.rot += p.vr;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    if (now - start < duration) {
+      requestAnimationFrame(frame);
+    } else {
+      ctx.clearRect(0, 0, width, height);
+      canvas.hidden = true;
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function showSummaryOverlay(summary) {
+  renderSummary(summary);
+  document.querySelector('[data-role="summary-overlay"]').hidden = false;
+  launchConfetti();
+}
+
 function completeWorkout() {
+  const summary = buildSummary();
   clearFocusState();
   post('/rotation/complete', {slug}).then(() => {
+    showSummaryOverlay(summary);
+  }).catch(() => {
     window.location.href = '/';
   });
 }
+
+document.querySelector('[data-role="summary-done"]').addEventListener('click', () => {
+  window.location.href = '/';
+});
 
 function finishOrAdvance() {
   if (focusIndex < focusSteps.length - 1) {
@@ -327,6 +505,14 @@ if (startBtn) {
     enterFocusMode(state ? state.index : 0);
   });
 }
+
+document.querySelectorAll('[data-role="edit-toggle"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const on = !document.body.classList.contains('edit-mode');
+    document.body.classList.toggle('edit-mode', on);
+    document.querySelectorAll('[data-role="edit-toggle"]').forEach(b => b.classList.toggle('active', on));
+  });
+});
 
 chartBtn.addEventListener('click', openProgressSheet);
 document.querySelector('[data-role="progress-close"]').addEventListener('click', closeProgressSheet);
@@ -486,16 +672,6 @@ document.querySelector('[data-role="rest-skip"]').addEventListener('click', () =
   clearInterval(restInterval);
   restInterval = null;
   restBar.hidden = true;
-});
-
-document.querySelectorAll('[data-role="edit-instruction"]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const url = prompt('Instruction link (URL):', btn.dataset.current || '');
-    if (url === null) return;
-    const line = parseInt(btn.dataset.line, 10);
-    post(`/routine/${slug}/field`, {label: 'Instruction', start_line: line, end_line: line, value: url})
-      .then(() => location.reload());
-  });
 });
 
 function wireField(el) {

@@ -7,6 +7,7 @@ from flask import Flask, render_template, jsonify, request, abort
 
 from routine_parser import (
     parse_routine, toggle_checkbox, update_field, update_weight, reset_checkboxes, set_exercise_skip,
+    clear_fields,
 )
 
 VAULT_ROUTINES_DIR = os.environ.get(
@@ -345,11 +346,14 @@ def rotation_complete():
     data = request.get_json(force=True)
     slug = data.get('slug', '')
     path = routine_path(slug)
+    routine = parse_routine(path)
     if slug not in DEBUG_SLUGS:
-        routine = parse_routine(path)
         append_session_log(routine)
         append_streak_entry(routine['title'])
     reset_checkboxes(path)
+    notes_section = next((s for s in routine['sections'] if s['is_notes']), None)
+    if notes_section:
+        clear_fields(path, notes_section['fields'])
     advance_rotation(slug)
     return jsonify({'next_slug': load_next_slug()})
 

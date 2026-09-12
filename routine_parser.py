@@ -62,8 +62,11 @@ def parse_routine(path):
                 'instruction': '',
                 'instruction_line': None,
                 'targets': '',
+                'targets_line': None,
                 'rest': '',
+                'rest_line': None,
                 'progression': '',
+                'progression_line': None,
                 'coaches_notes': '',
                 'coaches_notes_line': None,
                 'sets': [],
@@ -81,10 +84,13 @@ def parse_routine(path):
                     current_exercise['instruction_line'] = line_no
                 elif key == 'targets':
                     current_exercise['targets'] = value
+                    current_exercise['targets_line'] = line_no
                 elif key == 'rest':
                     current_exercise['rest'] = value
+                    current_exercise['rest_line'] = line_no
                 elif key == 'progression':
                     current_exercise['progression'] = value
+                    current_exercise['progression_line'] = line_no
                 elif key == 'coaches notes':
                     current_exercise['coaches_notes'] = value
                     current_exercise['coaches_notes_line'] = line_no
@@ -110,7 +116,8 @@ def parse_routine(path):
                 current_exercise = {
                     'name': current_section['name'],
                     'weight': '', 'reps': '', 'header_line': None, 'instruction': '',
-                    'instruction_line': None, 'targets': '', 'rest': '', 'progression': '',
+                    'instruction_line': None, 'targets': '', 'targets_line': None,
+                    'rest': '', 'rest_line': None, 'progression': '', 'progression_line': None,
                     'coaches_notes': '', 'coaches_notes_line': None,
                     'sets': [],
                 }
@@ -193,6 +200,11 @@ def update_field(path, label, start_line, end_line, value):
     lines[start_line - 1:end_line] = new_lines
     with open(path, 'w') as f:
         f.write('\n'.join(lines) + '\n')
+
+
+def clear_fields(path, fields):
+    for field in sorted(fields, key=lambda f: f['value_start_line'], reverse=True):
+        update_field(path, field['label'], field['value_start_line'], field['value_end_line'], '')
 
 
 def update_weight(path, line_no, new_weight):
