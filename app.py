@@ -18,6 +18,7 @@ VAULT_TALOS_DIR = os.path.dirname(VAULT_ROUTINES_DIR.rstrip('/'))
 ROTATION_STATE_PATH = os.path.join(VAULT_TALOS_DIR, 'rotation_state.json')
 SESSION_LOG_PATH = os.path.join(VAULT_TALOS_DIR, 'session_log.md')
 STREAK_LOG_PATH = os.path.join(VAULT_TALOS_DIR, 'streak.md')
+STREAK_STATUS_PATH = os.path.join(VAULT_TALOS_DIR, 'streak_status.json')
 
 STREAK_WEEKLY_MINIMUM = 3
 STREAK_WEEKLY_GOAL = 4
@@ -197,6 +198,7 @@ def append_streak_entry(title):
             )
     with open(STREAK_LOG_PATH, 'a') as f:
         f.write(f'- {date.today().isoformat()} — {title}\n')
+    write_streak_status()
 
 
 def current_week_streak_count():
@@ -220,10 +222,30 @@ def current_week_streak_count():
     return count
 
 
+def write_streak_status():
+    """Write a small machine-readable snapshot of this week's streak for
+    other apps (e.g. Quanta) to read, since streak.md is an append-only log."""
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    status = {
+        'week_start': week_start.isoformat(),
+        'count': current_week_streak_count(),
+        'minimum': STREAK_WEEKLY_MINIMUM,
+        'goal': STREAK_WEEKLY_GOAL,
+        'updated': today.isoformat(),
+    }
+    with open(STREAK_STATUS_PATH, 'w') as f:
+        json.dump(status, f, indent=2)
+        f.write('\n')
+    return status
+
+
 @app.context_processor
 def inject_streak():
+    count = current_week_streak_count()
+    write_streak_status()
     return {
-        'streak_count': current_week_streak_count(),
+        'streak_count': count,
         'streak_minimum': STREAK_WEEKLY_MINIMUM,
         'streak_goal': STREAK_WEEKLY_GOAL,
     }
