@@ -19,9 +19,9 @@
 
 **Coaches Notes:**
 
-- [ ] Set 1
-- [ ] Set 2
-- [ ] Set 3
+- [x] Set 1
+- [x] Set 2
+- [x] Set 3
 
 ---
 
@@ -35,8 +35,8 @@
 
 **Coaches Notes:**
 
-- [ ] Set 1
-- [ ] Set 2
+- [x] Set 1
+- [x] Set 2
 
 ---
 

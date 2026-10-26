@@ -230,6 +230,7 @@ const allStepsById = focusSteps.slice();
 allStepsById.forEach((card, i) => { card.dataset.stepId = i; });
 const focusStorageKey = `talos-focus-${slug}`;
 let focusIndex = 0;
+let pendingFieldSaves = [];
 
 const startBtn = document.querySelector('[data-role="start-workout"]');
 const finishMainBtn = document.querySelector('[data-role="finish-workout-main"]');
@@ -257,13 +258,17 @@ function loadFocusState() {
   return null;
 }
 
-function saveFocusState() {
+function persistFocusIndex(index) {
   try {
     localStorage.setItem(focusStorageKey, JSON.stringify({
-      index: focusIndex,
+      index,
       order: focusSteps.map(card => parseInt(card.dataset.stepId, 10)),
     }));
   } catch (e) {}
+}
+
+function saveFocusState() {
+  persistFocusIndex(focusIndex);
 }
 
 function clearFocusState() {
@@ -477,8 +482,13 @@ function showSummaryOverlay(summary) {
 
 function completeWorkout() {
   const summary = buildSummary();
-  clearFocusState();
-  post('/rotation/complete', {slug}).then(() => {
+  if (document.activeElement && document.activeElement.classList.contains('field-input')) {
+    document.activeElement.blur();
+  }
+  Promise.all(pendingFieldSaves).then(() => {
+    clearFocusState();
+    return post('/rotation/complete', {slug});
+  }).then(() => {
     showSummaryOverlay(summary);
   }).catch(() => {
     window.location.href = '/';
@@ -551,7 +561,10 @@ document.querySelectorAll('[data-role="set-toggle"]').forEach(btn => {
         if (seconds > 0) startRestTimer(seconds, card.dataset.exerciseName);
         if (document.body.classList.contains('focus-mode') && card.classList.contains('focus-active')) {
           const allChecked = Array.from(card.querySelectorAll('[data-role="set-toggle"]')).every(b => b.classList.contains('checked'));
-          if (allChecked) setTimeout(finishOrAdvance, 350);
+          if (allChecked) {
+            persistFocusIndex(Math.min(focusIndex + 1, focusSteps.length - 1));
+            setTimeout(finishOrAdvance, 350);
+          }
         }
       }
     }).finally(() => { btn.disabled = false; });
@@ -595,7 +608,12 @@ document.querySelectorAll('[data-role="skip-exercise"]').forEach(btn => {
       });
       if (document.body.classList.contains('focus-mode')) {
         renderProgress();
-        if (skip) setTimeout(finishOrAdvance, 350);
+        if (skip) {
+          if (card.classList.contains('focus-active')) {
+            persistFocusIndex(Math.min(focusIndex + 1, focusSteps.length - 1));
+          }
+          setTimeout(finishOrAdvance, 350);
+        }
       }
     }).finally(() => { btn.disabled = false; });
   });
@@ -680,8 +698,12 @@ function wireField(el) {
     const label = el.dataset.label;
     const start = parseInt(el.dataset.start, 10);
     const end = parseInt(el.dataset.end, 10);
-    post(`/routine/${slug}/field`, {label, start_line: start, end_line: end, value: el.value}).then(() => {
+    const savePromise = post(`/routine/${slug}/field`, {label, start_line: start, end_line: end, value: el.value}).then(() => {
       if (status) { status.textContent = 'Saved'; setTimeout(() => status.textContent = '', 1200); }
+    });
+    pendingFieldSaves.push(savePromise);
+    savePromise.finally(() => {
+      pendingFieldSaves = pendingFieldSaves.filter(p => p !== savePromise);
     });
   });
 }

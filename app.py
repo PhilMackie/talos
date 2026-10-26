@@ -19,6 +19,7 @@ VAULT_TALOS_DIR = os.path.dirname(VAULT_ROUTINES_DIR.rstrip('/'))
 ROTATION_STATE_PATH = os.path.join(VAULT_TALOS_DIR, 'rotation_state.json')
 SESSION_LOG_PATH = os.path.join(VAULT_TALOS_DIR, 'session_log.md')
 STREAK_LOG_PATH = os.path.join(VAULT_TALOS_DIR, 'streak.md')
+MUAY_THAI_LOG_PATH = os.path.join(VAULT_TALOS_DIR, 'muay_thai_log.md')
 STREAK_STATUS_PATH = os.path.join(VAULT_TALOS_DIR, 'streak_status.json')
 
 STREAK_WEEKLY_MINIMUM = 3
@@ -185,6 +186,14 @@ def append_session_log(routine):
             f.write('# Talos — Session Log\n\n')
     with open(SESSION_LOG_PATH, 'a') as f:
         f.write(build_session_log_entry(routine) + '\n')
+
+
+def append_muay_thai_log(notes):
+    if not os.path.exists(MUAY_THAI_LOG_PATH):
+        with open(MUAY_THAI_LOG_PATH, 'w') as f:
+            f.write('# Talos — Muay Thai Log\n\n')
+    with open(MUAY_THAI_LOG_PATH, 'a') as f:
+        f.write(f"## {date.today().isoformat()}\n\n{notes.strip()}\n\n---\n\n")
 
 
 def append_streak_entry(title):
@@ -356,6 +365,17 @@ def rotation_complete():
         clear_fields(path, notes_section['fields'])
     advance_rotation(slug)
     return jsonify({'next_slug': load_next_slug()})
+
+
+@app.route('/muay-thai/log', methods=['POST'])
+def muay_thai_log():
+    data = request.get_json(force=True)
+    notes = (data.get('notes') or '').strip()
+    if not notes:
+        abort(400)
+    append_muay_thai_log(notes)
+    append_streak_entry('Muay Thai')
+    return jsonify({'ok': True})
 
 
 @app.route('/rotation/set', methods=['POST'])

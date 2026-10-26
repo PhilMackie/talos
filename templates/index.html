@@ -24,6 +24,16 @@
   </div>
 {% endif %}
 
+<section class="muay-thai-section">
+  <h2 class="section-title">Muay Thai</h2>
+  <div class="notes-card">
+    <label class="field-label" for="muay-thai-notes">Session notes</label>
+    <textarea class="field-input notes-textarea" id="muay-thai-notes" rows="4" placeholder="Rounds, drills, sparring notes…"></textarea>
+    <button type="button" class="finish-btn" data-role="log-muay-thai">Log Muay Thai Session</button>
+    <div class="save-status" data-role="muay-thai-status"></div>
+  </div>
+</section>
+
 <div class="debug-session-row">
   <a class="debug-session-btn" href="{{ url_for('routine_view', slug='debug') }}">Debug Session</a>
 </div>
@@ -38,5 +48,33 @@ document.querySelectorAll('[data-role="mark-next"]').forEach(btn => {
     }).then(r => { if (r.ok) location.reload(); });
   });
 });
+
+const muayThaiBtn = document.querySelector('[data-role="log-muay-thai"]');
+if (muayThaiBtn) {
+  muayThaiBtn.addEventListener('click', () => {
+    const textarea = document.getElementById('muay-thai-notes');
+    const status = document.querySelector('[data-role="muay-thai-status"]');
+    const notes = textarea.value.trim();
+    if (!notes) {
+      status.textContent = 'Add some notes first.';
+      return;
+    }
+    muayThaiBtn.disabled = true;
+    fetch('/muay-thai/log', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({notes}),
+    }).then(r => {
+      muayThaiBtn.disabled = false;
+      if (r.ok) {
+        textarea.value = '';
+        status.textContent = 'Logged — nice work.';
+        setTimeout(() => location.reload(), 900);
+      } else {
+        status.textContent = 'Something went wrong — try again.';
+      }
+    });
+  });
+}
 </script>
 {% endblock %}
